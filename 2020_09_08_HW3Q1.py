@@ -1,9 +1,9 @@
 import statistics
 
-x = 100000               # prime numbers up to 100,000
+x = 100000               # prime numbers less than 100,000
 result = []
 
-for i in range(2,x+1):
+for i in range(2,x):
    for j in range(2,i+1):
       if i == j:         # As i and j are equal, i is a prime.
          result.append( i )
@@ -16,4 +16,4 @@ for i in range(2,x+1):
 print( statistics.median( result ) )
 
 # Geeting the sum
-print( sum( result ))    
+print( sum( result ))
