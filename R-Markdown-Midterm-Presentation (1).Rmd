@@ -1,0 +1,184 @@
+---
+title: "Final Project"
+author: "Celeste Kim"
+date: "9/2/2019"
+output:
+  html_document: default
+  pdf_document: default
+---
+### Data Science 250 Midterm Presentation
+
+```{r echo=FALSE}
+library(tidyverse)
+library(dplyr)
+rawdata <- read.csv("Collisions.csv")
+df <- as_tibble(rawdata)
+```
+
+### Data
+
+- https://catalog.data.gov/dataset/collisions
+- Data set regarding all collisions from 2004 - present in the city of Seattle
+
+### Initial Questions
+
+- To what degree do driving conditions(road condition, light condition, weather) affect the chances of collisions?
+- Do some parts of the road(intersection, block, alley) have more tendency to cause collisions?
+- How has different variables of collisions changed over the time period of the data set?
+
+### New/Altered Questions
+
+## - How are driving conditions(road condition, light condition, weather) associated with the severity of collisions?
+
+```{r echo=FALSE}
+#selects road, light conditions, weather, and the severity of the collision
+environment <- df %>% 
+  select(ROADCOND, LIGHTCOND, WEATHER, SEVERITYCODE)
+
+#creates roadcond  
+  roadcond <- environment %>%
+    select(ROADCOND, SEVERITYCODE) %>%
+    filter(ROADCOND == "Dry"|
+            ROADCOND == "Ice"|
+            ROADCOND == "Oil"|
+            ROADCOND == "Sand/Mud/Dirt"|
+            ROADCOND == "Snow/Slush"|
+            ROADCOND == "Standing Water"|
+            ROADCOND == "Wet"
+           ) %>%
+    filter(!(SEVERITYCODE == 0))
+  
+  roadcond
+#creates countplot for roadcond
+    ggplot(roadcond, mapping = aes(x = ROADCOND, y = SEVERITYCODE)) + geom_count() + scale_size_area( max_size = 20)
+```
+
+
+
+```{r echo=FALSE}
+#creates lightcond
+    lightcond <- environment %>%
+      select(LIGHTCOND, SEVERITYCODE) %>%
+      filter(LIGHTCOND == "Dark - No Street Lights" |
+               LIGHTCOND == "Dark - Street Lights Off" |
+               LIGHTCOND == "Dark - Street Lights On" |
+               LIGHTCOND == "Dawn" |
+               LIGHTCOND == "Daylight" |
+               LIGHTCOND == "Dusk" 
+               ) %>%
+      filter(!(SEVERITYCODE == 0))
+  lightcond
+#creates countplot for lightcond
+    ggplot(lightcond, mapping = aes(x = LIGHTCOND, y = SEVERITYCODE)) + geom_count() + scale_size_area( max_size = 20 )
+```
+
+Light Conditions(In Order)
+
+- Dark - No Street Lights
+
+- Dark - Street Lights Off
+
+- Dark - Stree Lights On
+
+- Dawn
+
+- Daylight
+
+- Dusk
+
+```{r echo=FALSE}
+#creates weather
+  weather <- environment %>%
+    select(WEATHER, SEVERITYCODE) %>%
+    filter(WEATHER == "Blowing Sand or Dirt or Snow" |
+             WEATHER == "Clear or Partly Cloudy"|
+             WEATHER == "Fog/Smog/Smoke" |
+             WEATHER == "Overcast" |
+             WEATHER == "Raining" |
+             WEATHER == "Severe Crosswind" |
+             WEATHER == "Sleet/Hail/Freezing Rain" |
+             WEATHER == "Snowing"
+           ) %>%
+    filter(!(SEVERITYCODE == 0))
+  
+  weather
+#creates countplot for weather
+    ggplot(weather, mapping = aes(x = WEATHER, y = SEVERITYCODE)) + geom_count() + scale_size_area( max_size = 20)
+```
+
+Weathers(In Order)
+
+- Blowing Sand or Dirt Snow
+
+- Clear or Partly Cloudy
+
+- Fog/Smog/Smoke
+
+- Overcast
+
+- Raining
+
+- Severe Crosswind
+
+- Sleet/Hail/Freezing Rain
+
+- Snowing
+
+
+## - How is the the type of the road associated with the severity of collisions? (Trevor’s Suggestion)
+
+```{r echo=FALSE}
+#selects type of road and compares it to severity (fatality, serious injury, injury, property damage)
+road_type_severity <- df %>%
+  select(ADDRTYPE, SEVERITYCODE) %>%
+  filter(!(SEVERITYCODE == 0)) %>%
+  group_by(ADDRTYPE) %>%
+  summarise(fatality_rate = mean(SEVERITYCODE == "3") * 100,
+            serious_injury_rate = mean(SEVERITYCODE == "2b") * 100,
+            injury_rate = mean(SEVERITYCODE == 2 ) * 100,
+            prop_dmg_rate = mean(SEVERITYCODE == 1) * 100) %>%
+  filter(ADDRTYPE == "Block" |
+        ADDRTYPE == "Alley" |
+        ADDRTYPE == "Intersection" )
+road_type_severity
+
+ggplot(road_type_severity, aes(x = ADDRTYPE, y = fatality_rate)) + geom_col()
+ggplot(road_type_severity, aes(x = ADDRTYPE, y = serious_injury_rate)) + geom_col()
+ggplot(road_type_severity, aes(x = ADDRTYPE, y = injury_rate)) + geom_col()
+ggplot(road_type_severity, aes(x = ADDRTYPE, y = prop_dmg_rate)) + geom_col()
+```
+
+## - How has different variables of collisions changed over the time period of the data set? (Not Changed)
+
+```{r echo=FALSE}
+#separates date into year, month, and date and compares it to severity
+date_severity <-  df %>%
+  select(INCDATE, SEVERITYCODE) %>%
+  separate(INCDATE, into = c("year", "month", "date"), sep = "-", convert = TRUE) %>%
+  separate(date, into = c("date", "idk"), sep = "T", convert = TRUE) %>%
+  select(-idk) %>%
+  arrange(year, month, date)
+date_severity
+
+date_severity2 <- date_severity %>%
+  mutate(time = year + month / 13 + date / 310) %>%
+  select(time, SEVERITYCODE) 
+  
+ggplot(date_severity2, mapping = aes(x = time, y = SEVERITYCODE)) + geom_point(position = "jitter")
+```
+
+## - The relationship between the locations in the city of Seattle and collisions (Jeong’s Suggestion)
+
+## Difficulties
+
+- Thankfully, most of the data set was tidy and did not require a lot of data wrangling
+  * Examples of difficulties, however, included variable called INCDATE, which lumped together year, month, date, and an unrecognizable string together, which I had to use the "separate()" function to tidy
+- Still having difficulties finding a method to create a visual incorporating the map of Seattle and markers indicating the frequency of collisions
+- A lot of Unknown/implicitly missing values that require a lot of filtering
+- Too much data (e.g. time vs severity)
+
+## Looking Forward
+
+- Continue research with the visual incorporating the map of Seattle and markers indicating the frequency of collisions
+- Analyze data to potentially find causation, not just association
+- Compare more variables with time
